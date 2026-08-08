@@ -16,14 +16,14 @@ def analyze_event_node(state: FrictionAgentState) -> dict:
     if not current_moment:
         return {"investigationStatus": "error"}
 
-    prompt = f"""Analyze this friction moment and extract structured information.
-    Do not diagnose. Focus on environmental factors.
-    
-    Moment Context: {current_moment.classContext or 'Unknown class'}
-    Moment Note: {current_moment.textNote or 'No text note'}
-    Categories: {', '.join(current_moment.categories)}
-    Ambient Noise: {str(current_moment.ambientLevel) + '/100' if current_moment.ambientLevel else 'Unknown'}
-    """
+    prompt = f"""Analyze this friction moment and extract structured environmental signals.
+DO NOT diagnose or speculate on medical/psychological conditions. Focus purely on environmental triggers.
+
+Moment Context: {current_moment.classContext or 'Unknown class'}
+Moment Note: {current_moment.textNote or 'No text note'}
+Categories: {', '.join(current_moment.categories)}
+Ambient Noise: {str(current_moment.ambientLevel) + '/100' if current_moment.ambientLevel else 'Unknown'}
+"""
 
     structured_event = structured_llm.invoke([HumanMessage(content=prompt)])
     
@@ -40,18 +40,25 @@ def investigate_node(state: FrictionAgentState) -> dict:
     structured_event = state.get("structuredEvent")
     event_json = structured_event.model_dump_json() if structured_event else "{}"
 
-    system_msg = SystemMessage(content=f"""You are an evidence investigation agent. Your job is to query the student's local history to find patterns regarding a recently reported friction event.
-You just analyzed this event: {event_json}.
-Call tools to search for similar moments, get support preferences, or check evidence strength.
-When you check evidence strength via the 'check_evidence_strength' tool, its output will tell you if the evidence is insufficient, weak, moderate, or strong.
-If you have gathered evidence and evaluated it with the tool, DO NOT call more tools. Just output a plain text summary of what you found.
-Do not guess. Only rely on evidence from tools.
-Keep your iterations brief.""")
+    system_msg = SystemMessage(content=f"""You are an Evidence Investigation Agent for student accessibility.
+Your objective is to systematically investigate the student's local history to determine if a reported friction event represents a recurring environmental pattern or an isolated incident.
+
+Triggering Friction Event:
+{event_json}
+
+INSTRUCTIONS FOR AGENTIC LOOP:
+1. Search local history for similar moments using `search_similar_moments`.
+2. Retrieve active support preferences using `get_support_preferences`.
+3. Compare conditions using `compare_similar_events` if multiple categories are present.
+4. Evaluate candidate patterns using `check_evidence_strength`.
+5. IMPORTANT: If `check_evidence_strength` returns "do_not_surface" or "insufficient", DO NOT claim a pattern exists. Explicitly state that evidence is insufficient.
+6. Keep your responses grounded STRICTLY in tool outputs. Never invent evidence.
+7. Once you have invoked the tools and evaluated evidence strength, output your synthesis as text and do NOT call any more tools.""")
 
     messages = [system_msg] + state.get("messages", [])
     
     if not state.get("messages"):
-        messages.append(HumanMessage(content="Please investigate this friction event."))
+        messages.append(HumanMessage(content="Begin evidence investigation for this friction moment."))
 
     response = llm_with_tools.invoke(messages)
     
@@ -74,14 +81,15 @@ def safety_gate_node(state: FrictionAgentState) -> dict:
         [m.content for m in state.get("messages", []) if m.type == "ai" and isinstance(m.content, str)]
     )
     
-    prompt = f"""Review the following AI output for safety violations in a student accessibility app.
-CRITICAL RULES:
-- NO diagnosis of any kind (e.g., "autism", "ADHD")
-- NO medical claims
-- NO "meltdown probability" or internal mental state claims
-- NO claims that an accommodation is "medically necessary"
+    prompt = f"""Review the following agent output for strict safety violations in a student accessibility application.
 
-Output to check:
+CRITICAL POLICY CONSTRAINTS:
+- ABSOLUTELY NO medical, psychiatric, or diagnostic terms (e.g. "autism", "ADHD", "meltdown", "sensory overload disorder").
+- NO causal medical claims ("noise causes anxiety").
+- NO internal mental state predictions ("Maya will shut down").
+- MUST use observational language ("3 reported moments occurred after unexpected schedule changes").
+
+Output to audit:
 {ai_messages}
 """
 
@@ -104,9 +112,13 @@ def generate_insight_node(state: FrictionAgentState) -> dict:
         [m.content for m in state.get("messages", []) if m.type == "tool" and isinstance(m.content, str)]
     )
 
-    prompt = f"""Based on the following tool outputs containing gathered evidence, draft a final student-facing insight.
-DO NOT invent evidence. Use ONLY what is provided.
-Write in an empowering tone. Do not use diagnostic language.
+    prompt = f"""Based strictly on the verified tool outputs below, construct the final student-facing Friction Insight.
+
+RULES:
+- Use empowering, observational language ("observation" or "association"). Never claim causality.
+- Populate patterns with supporting moment IDs, sample sizes, and evidence strength as returned by the tools.
+- Include helpful preferences that match active student preferences.
+- If evidence was weak/insufficient, explain that clearly so the student knows more data is needed.
 
 Tool Outputs:
 {tool_outputs}
