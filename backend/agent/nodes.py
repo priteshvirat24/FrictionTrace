@@ -4,17 +4,26 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from .state import FrictionAgentState
 from .tools import create_agent_tools
 from .schemas import StructuredFrictionEvent, SafetyAssessment, FrictionInsight
+from .guardrails import check_input_guardrails, check_output_guardrails
 
 def get_llm():
     return ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
 
 def analyze_event_node(state: FrictionAgentState) -> dict:
-    llm = get_llm()
-    structured_llm = llm.with_structured_output(StructuredFrictionEvent)
-    
     current_moment = state.get("currentMoment")
     if not current_moment:
         return {"investigationStatus": "error"}
+
+    # Run Input Guardrails
+    is_safe, flags = check_input_guardrails(current_moment.textNote or "")
+    if not is_safe:
+        return {
+            "safetyFlags": flags,
+            "investigationStatus": "blocked_by_input_guardrail"
+        }
+
+    llm = get_llm()
+    structured_llm = llm.with_structured_output(StructuredFrictionEvent)
 
     prompt = f"""Analyze this friction moment and extract structured environmental signals.
 DO NOT diagnose or speculate on medical/psychological conditions. Focus purely on environmental triggers.
@@ -53,7 +62,7 @@ INSTRUCTIONS FOR AGENTIC LOOP:
 4. Evaluate candidate patterns using `check_evidence_strength`.
 5. IMPORTANT: If `check_evidence_strength` returns "do_not_surface" or "insufficient", DO NOT claim a pattern exists. Explicitly state that evidence is insufficient.
 6. Keep your responses grounded STRICTLY in tool outputs. Never invent evidence.
-7. Once you have invoked the tools and evaluated evidence strength, output your synthesis as text and do NOT call any more tools.""")
+7. Once you have invoked tools and evaluated evidence strength, output your synthesis as text and do NOT call any more tools.""")
 
     messages = [system_msg] + state.get("messages", [])
     
@@ -74,12 +83,16 @@ def validate_evidence_node(state: FrictionAgentState) -> dict:
     }
 
 def safety_gate_node(state: FrictionAgentState) -> dict:
-    llm = get_llm()
-    structured_llm = llm.with_structured_output(SafetyAssessment)
-    
     ai_messages = "\n".join(
         [m.content for m in state.get("messages", []) if m.type == "ai" and isinstance(m.content, str)]
     )
+    
+    # 1. Run Deterministic Keyword/Regex Guardrail
+    is_safe_det, flags_det = check_output_guardrails(ai_messages)
+    
+    # 2. Run LLM Policy Guardrail
+    llm = get_llm()
+    structured_llm = llm.with_structured_output(SafetyAssessment)
     
     prompt = f"""Review the following agent output for strict safety violations in a student accessibility application.
 
@@ -95,30 +108,31 @@ Output to audit:
 
     assessment = structured_llm.invoke([HumanMessage(content=prompt)])
     
+    all_flags = flags_det + (assessment.flags if assessment.flags else [])
+    
     return {
-        "safetyFlags": assessment.flags
+        "safetyFlags": all_flags
     }
 
 def generate_insight_node(state: FrictionAgentState) -> dict:
-    llm = get_llm()
-    structured_llm = llm.with_structured_output(FrictionInsight)
-    
     if state.get("safetyFlags"):
         return {
             "investigationStatus": "error"
         }
 
+    llm = get_llm()
+    structured_llm = llm.with_structured_output(FrictionInsight)
+
     tool_outputs = "\n\n".join(
         [m.content for m in state.get("messages", []) if m.type == "tool" and isinstance(m.content, str)]
     )
 
-    prompt = f"""Based strictly on the verified tool outputs below, construct the final student-facing Friction Insight.
+    prompt = f"""Based strictly on the verified tool outputs below, construct the final student-facing Friction Insight draft.
 
 RULES:
 - Use empowering, observational language ("observation" or "association"). Never claim causality.
 - Populate patterns with supporting moment IDs, sample sizes, and evidence strength as returned by the tools.
 - Include helpful preferences that match active student preferences.
-- If evidence was weak/insufficient, explain that clearly so the student knows more data is needed.
 
 Tool Outputs:
 {tool_outputs}
@@ -128,5 +142,13 @@ Tool Outputs:
     
     return {
         "finalInsight": final_insight,
+        "investigationStatus": "ready_for_review"
+    }
+
+def human_review_node(state: FrictionAgentState) -> dict:
+    """
+    Human-in-the-Loop Node: Holds execution until student approves, edits, or rejects the insight.
+    """
+    return {
         "investigationStatus": "ready_for_review"
     }

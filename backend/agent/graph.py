@@ -7,7 +7,8 @@ from .nodes import (
     investigate_node,
     validate_evidence_node,
     safety_gate_node,
-    generate_insight_node
+    generate_insight_node,
+    human_review_node
 )
 from .tools import create_agent_tools
 
@@ -43,6 +44,7 @@ def create_friction_agent_graph():
     workflow.add_node("validate_evidence_node", validate_evidence_node)
     workflow.add_node("safety_gate_node", safety_gate_node)
     workflow.add_node("generate_insight_node", generate_insight_node)
+    workflow.add_node("human_review_node", human_review_node)
     
     workflow.add_edge(START, "analyze_event_node")
     workflow.add_edge("analyze_event_node", "investigate_node")
@@ -68,6 +70,7 @@ def create_friction_agent_graph():
         }
     )
     
-    workflow.add_edge("generate_insight_node", END)
+    workflow.add_edge("generate_insight_node", "human_review_node")
+    workflow.add_edge("human_review_node", END)
     
     return workflow.compile()
