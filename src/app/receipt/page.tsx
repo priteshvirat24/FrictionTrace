@@ -121,7 +121,7 @@ This receipt was created and shared by the student.`;
   if (!mounted) return null;
 
   return (
-    <div>
+    <div className="page-container">
       <div className="page-header">
         <h1 className="page-title">Friction Receipt</h1>
         <p className="page-subtitle">

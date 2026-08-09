@@ -60,7 +60,7 @@ export default function InvestigationPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="page-container space-y-6">
       <header>
         <h1 className="text-3xl font-bold tracking-tight text-slate-100">AI Investigation</h1>
         <p className="mt-2 text-slate-400">

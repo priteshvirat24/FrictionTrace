@@ -71,7 +71,7 @@ export default function PatternsPage() {
 
   if (moments.length === 0) {
     return (
-      <div>
+      <div className="page-container">
         <div className="page-header">
           <h1 className="page-title">Patterns</h1>
           <p className="page-subtitle">AI-discovered patterns in your friction data.</p>
@@ -88,7 +88,7 @@ export default function PatternsPage() {
   }
 
   return (
-    <div>
+    <div className="page-container">
       <div className="page-header">
         <h1 className="page-title">Patterns</h1>
         <p className="page-subtitle">

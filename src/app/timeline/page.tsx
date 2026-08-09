@@ -22,7 +22,7 @@ export default function TimelinePage() {
   if (!mounted) return null;
 
   return (
-    <div>
+    <div className="page-container">
       <div className="page-header">
         <h1 className="page-title">Timeline</h1>
         <p className="page-subtitle">

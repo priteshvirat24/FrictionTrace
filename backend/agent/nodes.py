@@ -1,13 +1,23 @@
 import json
+import os
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_mistralai import ChatMistralAI
 from .state import FrictionAgentState
 from .tools import create_agent_tools
 from .schemas import StructuredFrictionEvent, SafetyAssessment, FrictionInsight
 from .guardrails import check_input_guardrails, check_output_guardrails
 
 def get_llm():
-    return ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
+    mistral_key = os.getenv("MISTRAL_API_KEY")
+    fallback_llm = ChatMistralAI(model="mistral-large-latest", temperature=0, mistral_api_key=mistral_key)
+    
+    gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not gemini_key:
+        return fallback_llm
+        
+    primary_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0, google_api_key=gemini_key)
+    return primary_llm.with_fallbacks([fallback_llm])
 
 def analyze_event_node(state: FrictionAgentState) -> dict:
     current_moment = state.get("currentMoment")

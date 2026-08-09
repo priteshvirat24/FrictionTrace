@@ -2,6 +2,16 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { FrictionCategory, CATEGORY_META } from '@/lib/types';
+import { Zap, VolumeX, Clock, FileText, Users, SplitSquareHorizontal, HelpCircle } from 'lucide-react';
+
+const ICON_MAP: Record<FrictionCategory, React.ReactNode> = {
+  noise: <VolumeX size={24} strokeWidth={1.5} />,
+  unexpected_change: <Clock size={24} strokeWidth={1.5} />,
+  instructions: <FileText size={24} strokeWidth={1.5} />,
+  people: <Users size={24} strokeWidth={1.5} />,
+  transition: <SplitSquareHorizontal size={24} strokeWidth={1.5} />,
+  dont_know: <HelpCircle size={24} strokeWidth={1.5} />
+};
 
 interface Props {
   onMomentLogged: (data: {
@@ -130,12 +140,12 @@ export default function FrictionButton({ onMomentLogged, classes = [] }: Props) 
               aria-label="Something is hard right now - press to log a friction moment"
               id="friction-button-main"
             >
-              <span className="friction-button-icon">⚡</span>
-              <span className="friction-button-text">Something is hard right now</span>
+              <Zap size={40} strokeWidth={1.5} color="#FAF0E8" style={{ marginBottom: '8px' }} />
+              <span className="friction-button-text">Something is<br/>hard right now</span>
             </button>
             <div className="friction-ring" ref={ringRef} />
-            <p className="friction-button-hint">
-              Tap to explain · Hold to log without explaining
+            <p className="friction-button-hint" style={{ marginTop: '-8px' }}>
+              Tap to explain<br/>Hold to log without explaining
             </p>
           </div>
         )}
@@ -160,8 +170,10 @@ export default function FrictionButton({ onMomentLogged, classes = [] }: Props) 
                   aria-pressed={selectedCategories.includes(cat)}
                   id={`category-${cat}`}
                 >
-                  <span className="category-chip-icon">{CATEGORY_META[cat].icon}</span>
-                  <span>{CATEGORY_META[cat].label}</span>
+                  <span className="category-chip-icon" style={{ display: 'flex', color: CATEGORY_META[cat].color }}>
+                    {ICON_MAP[cat]}
+                  </span>
+                  <span style={{ fontWeight: 600, fontSize: '0.8rem', textAlign: 'center' }}>{CATEGORY_META[cat].label}</span>
                 </button>
               ))}
             </div>

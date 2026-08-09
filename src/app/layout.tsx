@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import Sidebar from '@/components/Sidebar';
+import Sidebar from '@/components/Sidebar'; // Still called Sidebar internally, but acts as Navigation
 
 export const metadata: Metadata = {
   title: 'FrictionTrace — Stop measuring the child. Start measuring the friction.',
@@ -17,18 +17,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="theme-color" content="#06080f" />
+        <meta name="theme-color" content="#FAF0E8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </head>
       <body>
-        <div className="app-layout">
-          <Sidebar />
-          <main className="main-content">
-            <div className="page-container">
-              {children}
-            </div>
-          </main>
-        </div>
+        <Sidebar />
+        <main style={{ minHeight: '100vh', width: '100%' }}>
+          {children}
+        </main>
       </body>
     </html>
   );

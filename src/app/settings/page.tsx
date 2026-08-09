@@ -83,7 +83,7 @@ export default function SettingsPage() {
   if (!mounted || !settings) return null;
 
   return (
-    <div>
+    <div className="page-container">
       <div className="page-header">
         <h1 className="page-title">Settings</h1>
         <p className="page-subtitle">
