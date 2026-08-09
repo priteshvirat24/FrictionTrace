@@ -67,6 +67,61 @@ Instead of reading a boring JSON output of AI data, users can press **`J`** on t
 
 FrictionTrace is a full-stack application leveraging a heavily customized Agentic AI backend and a high-performance 3D frontend.
 
+```mermaid
+graph TD
+    %% Styling
+    classDef frontend fill:#F8F1EB,stroke:#C08C72,stroke-width:2px,color:#3A261D
+    classDef backend fill:#EDDED0,stroke:#A35A52,stroke-width:2px,color:#3A261D
+    classDef ai fill:#3A261D,stroke:#A35A52,stroke-width:2px,color:#FAF0E8
+    classDef db fill:#ffffff,stroke:#D6C2B6,stroke-width:2px,color:#6A564A
+    classDef user fill:#FAF0E8,stroke:#3A261D,stroke-width:2px,color:#3A261D,stroke-dasharray: 5 5
+
+    %% Nodes
+    User(("🧑‍🎓 Student User")):::user
+    
+    subgraph Frontend ["Frontend Client (Next.js & React Three Fiber)"]
+        UI["Friction Sensor UI"]:::frontend
+        ThreeJS["3D Architectural State Machine<br/>(Judge Mode)"]:::frontend
+        State["Client State & Animation"]:::frontend
+    end
+    
+    subgraph Backend ["Backend API (Python FastAPI)"]
+        API["REST API Endpoints"]:::backend
+        Orchestrator["Agent Orchestrator"]:::backend
+    end
+    
+    subgraph Agentic_AI ["Autonomous AI System"]
+        Agent["Friction Investigator Agent<br/>(LLM / LangChain)"]:::ai
+        PatternMatching["Environmental Pattern Analyzer"]:::ai
+        ReceiptGen["Friction Receipt Generator"]:::ai
+    end
+    
+    subgraph Data_Sources ["School Data Integration"]
+        ScheduleDB[("Student Info System")]:::db
+        HistoryDB[("Historical Friction Logs")]:::db
+        EnvDB[("Environmental Context")]:::db
+    end
+
+    %% Connections
+    User -- "Logs Friction Event" --> UI
+    UI -- "POST /api/moments" --> API
+    API --> Orchestrator
+    
+    Orchestrator -- "Triggers Investigation" --> Agent
+    
+    Agent -- "Queries Context" --> ScheduleDB
+    Agent -- "Queries History" --> HistoryDB
+    Agent -- "Queries Environment" --> EnvDB
+    
+    Agent --> PatternMatching
+    PatternMatching --> ReceiptGen
+    ReceiptGen -- "Returns JSON Insights" --> Orchestrator
+    
+    Orchestrator -- "Sends Friction Receipt" --> State
+    State -- "Updates Narrative Timeline" --> ThreeJS
+    ThreeJS -- "Renders Cinematic Visualization" --> User
+```
+
 ### Frontend: The Interface & State Machine
 - **Framework:** Next.js (App Router) & React.
 - **3D Engine:** React Three Fiber / Three.js for the interactive architectural maquette.
